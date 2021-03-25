@@ -1,0 +1,6 @@
+google-cloud-bigquery-storage==2.3.0
+grpcio==1.36.1
+ipykernel==5.5.0
+pandas-gbq==0.14.0
+pip-chill==1.0.1
+pyarrow==3.0.0
