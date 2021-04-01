@@ -1,7 +1,9 @@
 
 # coding: utf-8
 
-# In[1]:
+# ## Import libraries
+
+# In[214]:
 
 
 import pandas as pd
@@ -10,14 +12,20 @@ import pickle
 import os
 
 
-# In[2]:
+# In[197]:
+
+
+get_ipython().run_line_magic('load_ext', 'google.cloud.bigquery')
+
+
+# In[215]:
 
 
 client = bigquery.Client()
 merch_data_ref = client.dataset('merch_store', project = 'dummy24571')
 
 
-# In[3]:
+# In[216]:
 
 
 def bq2df(sql):
@@ -26,245 +34,190 @@ def bq2df(sql):
     return results.to_dataframe()
 
 
-# In[4]:
+# ### Raw data
+
+# In[217]:
 
 
 q = ('SELECT * FROM `dummy24571.merch_store.ga_sessions_*` '
     'LIMIT 100')
 
 
-# In[5]:
+# In[218]:
 
 
-# bq2df(q)
+complete_data = bq2df(q)
 
 
-# In[6]:
+# In[232]:
+
+
+complete_data.head()
+
+
+# In[78]:
 
 
 merch_data = client.get_dataset(merch_data_ref)
 
 
-# In[7]:
+# In[147]:
 
 
-merch_data
+tables = [x.table_id for x in client.list_tables(merch_data)]
 
 
-# In[8]:
+# In[148]:
 
 
-# [x.table_id for x in client.list_tables(merch_data)]
+len(tables)
 
 
-# In[9]:
+# In[149]:
 
 
 merch_full = client.get_table(merch_data.table('ga_sessions_20160801'))
 
 
-# In[10]:
+# In[188]:
 
 
-merch_full
+q = """
+    SELECT 
+      CONCAT(fullVisitorID,'-',CAST(visitNumber AS STRING)) AS visitorId,
+      hitNumber,
+      time,
+      page.pageTitle,
+      type,
+      productSKU,
+      v2ProductName,
+      v2ProductCategory,
+      productPrice/1000000 as productPrice_USD
 
+    FROM 
+      `bigquery-public-data.google_analytics_sample.ga_sessions_20160801`, 
+      UNNEST(hits) AS hits,
+      UNNEST(hits.product) AS hits_product
 
-# In[11]:
-
-
-[command for command in dir(merch_full) if not command.startswith('_')]
-
-
-# In[20]:
-
-
-# merch_full.schema
-
-
-# In[75]:
-
-
-query = """
-  SELECT
-      fullVisitorId AS visitor_id,
-      visitId AS visit_id,
-      CONCAT(fullVisitorId, CAST(visitId AS STRING)) AS unique_session_id,
-      date,
-      product.v2ProductCategory AS product_category,
-      product.v2ProductName AS product_name,
-      product.productSKU AS product_sku,
-      product.productPrice/1e6 AS product_price,
-      product.productQuantity AS product_quantity,
-      product.productRevenue/1e6 AS product_revenue,
-      totals.totalTransactionRevenue/1e6 AS total_revenue
-  FROM
-      `bigquery-public-data.google_analytics_sample.ga_sessions_*`
-      , UNNEST(hits) AS hits
-      , UNNEST(hits.product) AS product
-  WHERE
-      _TABLE_SUFFIX BETWEEN '20170401' AND '20170430'
-      AND geoNetwork.country = 'United States'
-      AND productRevenue IS NOT NULL
-  ORDER BY
-      4 ASC, 10 DESC
 """
 
 
-# In[91]:
+# In[189]:
 
 
-data_0 = bq2df(query)
+dd = bq2df(q)
 
 
-# In[93]:
+# In[190]:
 
 
-data_0
+dd.head()
 
 
-# In[46]:
+# In[191]:
 
 
-query = """
-  SELECT
-      fullVisitorId AS visitor_id,
-      visitId AS visit_id,
-      CONCAT(fullVisitorId, CAST(visitId AS STRING)) AS unique_session_id,
-      date,
-      product.v2ProductCategory AS product_category,
-      product.v2ProductName AS product_name,
-      product.productSKU AS product_sku,
-      product.productPrice/1e6 AS product_price,
-      totals.timeOnScreen AS time_spent,
-      totals.transactions AS transection,
-      product.productQuantity AS product_quantity,
-      product.productRevenue/1e6 AS product_revenue,
-  FROM
-      `bigquery-public-data.google_analytics_sample.ga_sessions_*`
-      , UNNEST(hits) AS hits
-      , UNNEST(hits.product) AS product
-  WHERE
-      _TABLE_SUFFIX BETWEEN '20170401' AND '20170531'
-      AND geoNetwork.country = 'United States'
-      AND productRevenue IS NOT NULL
-  ORDER BY
-      4 ASC
+pre_process = """    
+    CREATE OR REPLACE TABLE merch_store.aggregate_web_stats AS (
+      WITH
+        durations AS (
+          --calculate pageview durations
+          SELECT
+            CONCAT(fullVisitorID,'-', 
+                 CAST(visitNumber AS STRING),'-', 
+                 CAST(hitNumber AS STRING) ) AS visitorId_session_hit,
+            LEAD(time, 1) OVER (
+              PARTITION BY CONCAT(fullVisitorID,'-',CAST(visitNumber AS STRING))
+              ORDER BY
+              time ASC ) - time AS pageview_duration
+          FROM
+            `bigquery-public-data.google_analytics_sample.ga_sessions_2016*`,
+            UNNEST(hits) AS hit 
+        ),
+
+        prodview_durations AS (
+          --filter for product detail pages only
+          SELECT
+            CONCAT(fullVisitorID,'-',CAST(visitNumber AS STRING)) AS visitorId,
+            productSKU AS itemId,
+            IFNULL(dur.pageview_duration,
+              1) AS pageview_duration,
+          FROM
+            `bigquery-public-data.google_analytics_sample.ga_sessions_2016*` t,
+            UNNEST(hits) AS hits,
+            UNNEST(hits.product) AS hits_product
+          JOIN
+            durations dur
+          ON
+            CONCAT(fullVisitorID,'-',
+                   CAST(visitNumber AS STRING),'-',
+                   CAST(hitNumber AS STRING)) = dur.visitorId_session_hit
+          WHERE
+          #action_type: Product detail views = 2
+          eCommerceAction.action_type = "2" 
+        ),
+
+        aggregate_web_stats AS(
+          --sum pageview durations by visitorId, itemId
+          SELECT
+            visitorId,
+            itemId,
+            SUM(pageview_duration) AS session_duration
+          FROM
+            prodview_durations
+          GROUP BY
+            visitorId,
+            itemId )
+        SELECT
+          *
+        FROM
+          aggregate_web_stats
+    );
+    -- Show table
+    SELECT
+      *
+    FROM
+      merch_store.aggregate_web_stats
+
 """
+        
 
 
-# In[47]:
+# In[192]:
 
 
-data_1 = bq2df(query)
+processed_data = bq2df(qt1)
 
 
-# In[48]:
+# In[193]:
 
 
-data_1
+processed_data.head()
 
 
-# In[53]:
+# In[194]:
 
 
-query = """
-  SELECT
-      CONCAT(fullVisitorId, CAST(visitId AS STRING)) AS unique_session_id,
-      date,
-      totals.totalTransactionRevenue/1e6 AS total_revenue
-  FROM
-      `bigquery-public-data.google_analytics_sample.ga_sessions_*`
-  WHERE
-      _TABLE_SUFFIX BETWEEN '20170401' AND '20170430'
-      AND geoNetwork.country = 'United States'
-      AND totals.totalTransactionRevenue IS NOT NULL
-"""
+processed_data.agg(['count', 'size', 'nunique'])
 
 
-# In[54]:
+# In[245]:
 
 
-data_2 = bq2df(query)
+(processed_data['itemId'].nunique()).count()
 
 
-# In[55]:
+# In[235]:
 
 
-data_2
+most_popular = popular_products.sort_values('session_duration', ascending=False)
+most_popular.head(10)
 
 
-# In[60]:
+# ## Train the matrix factorization model
+
+# In[230]:
 
 
-query = """
-  SELECT
-      fullVisitorId AS visitor_id,
-      visitId AS visit_id,
-      date,
-      product.v2ProductCategory AS product_category,
-      product.v2ProductName AS product_name,
-      product.productSKU AS product_sku,
-      product.productPrice/1e6 AS product_price,
-      product.productQuantity AS product_quantity,
-      product.productRevenue/1e6 AS product_revenue,
-      totals.totalTransactionRevenue/1e6 AS total_revenue
-  FROM
-      `bigquery-public-data.google_analytics_sample.ga_sessions_*`
-      , UNNEST(hits) AS hits
-      , UNNEST(hits.product) AS product
-  WHERE
-      _TABLE_SUFFIX BETWEEN '20170401' AND '20170430'
-      AND geoNetwork.country = 'United States'
-      AND productRevenue IS NOT NULL
-  ORDER BY
-      4 ASC, 10 DESC
-"""
-
-
-# In[61]:
-
-
-data_3 = bq2df(query)
-
-
-# In[79]:
-
-
-data_3.shape
-
-
-# In[80]:
-
-
-data_3.head()
-
-
-# In[ ]:
-
-
-df = pd.read_csv(('../data/raw/raw.csv'))
-
-
-# In[ ]:
-
-
-df.head()
-
-
-# In[3]:
-
-
-import platform
-
-
-# In[4]:
-
-
-platform.python_version()
-
-
-# In[1]:
-
-
-from google.cloud import bigquery
+get_ipython().run_cell_magic('bigquery', '', "\nCREATE OR REPLACE MODEL merch_store.retail_recommender\nOPTIONS(model_type='matrix_factorization', \n        user_col='visitorId', \n        item_col='itemId',\n        rating_col='session_duration',\n        feedback_type='implicit'\n        )\nAS\nSELECT * FROM merch_store.aggregate_web_stats")
 
