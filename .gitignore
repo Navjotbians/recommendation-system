@@ -2,4 +2,6 @@
 *.html
 help
 .env
+data
+
 
