@@ -2,9 +2,10 @@
 # Recommender System 
 
 We all are influenced by the recommender system to different degrees, if we are using social media, making an online purchase or consuming content from streaming platforms. Recommender systems engage the user by providing them with personalized choices based on their past behaviour. 
-It’s a very hot topic in e-commerce, it has changed the way we sell things, we have unlimited inventory, the products we previously neglected in the stores are assessable to the customers now online. 
-Under the hood, a recommender system is a learning algorithm that learns from past preferences to predict the future behaviour of the user.
-Some example from real-life are: Amazon, Netflix, LinkedIn, Spotify,  OkCupid, New York Times, GitHub, Medical (Facilitating clinical decision making)
+<br>
+It’s a very hot topic in e-commerce, it has changed the way we sell things, we have unlimited inventory, the products we previously neglected in the stores are assessable to the customers now online. <br>
+Under the hood, a recommender system is a learning algorithm that learns from past preferences to predict the future behaviour of the user.<br>
+Some example from real-life are: Amazon, Netflix, LinkedIn, Spotify, OkCupid, New York Times, GitHub, Medical (Facilitating clinical decision making)
 
 
 ### Motivation
