@@ -47,5 +47,5 @@ Transactional data: information about the transactions that occur on the Google 
 Orignal dataset contains total of 366 tables, one table for each day. Each row of the table represents a session and columns contains the detailed information about the session. Details on table schema and columns can be found here [BigQuery table schema](https://support.google.com/analytics/answer/3437719?hl=en)
 
 ## Data Pre-processing
-Mostly for e-commerce, we don't get explicit feedback from the users, like rating on the product. So we consider ratings here as a time spent by user on checking the details of the product on web page. 
+Mostly for e-commerce, we don't get explicit feedback from the users, like rating on the product. So we consider ratings here as a time spent by user on checking the details of the product on web page. <br>
 [Processed data can be download from here](https://drive.google.com/drive/folders/1hjyAcf3whkc1SZMvGmTmlktxEqBu55JP?usp=sharing)
