@@ -22,7 +22,8 @@ To build a Recommender system capable of making recommendations in a sensible wa
 ## Working of Recommender System
 
 ![](images/2.JPG)
-explicit feedback: direct feedback towards an item (e.g., movie ratings)
+
+explicit feedback: direct feedback towards an item (e.g., movie ratings)<br>
 implicit feedback: indirect behaviour towards an item (e.g., purchase history, time spent on product page, search behaviour)
 
 ### Content Based 
