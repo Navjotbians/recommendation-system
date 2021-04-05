@@ -19,3 +19,21 @@ Offering a plethora of selection options doesn’t necessarily mean a customer w
 ### Goal
 To build a Recommender system capable of making recommendations in a sensible way.
 
+## Working of Recommender System
+
+### Content Based 
+We assume that features of the different products available to us. These features tells us to what degree a product falls into a certain category.
+
+### Colaborative Filtering
+It is impossible to have features of all the products we are selling so in that case Collaborative filtering is used. This algorithm has an interesting property called feature learning, it learn for itself what features to use.
+
+## Data
+The sample dataset contains jumbled [Google Analytics 360 data](https://console.cloud.google.com/marketplace/product/obfuscated-ga360-data/obfuscated-ga360-data?filter=solution-type:dataset) from the Google Merchandise Store, a real ecommerce store, for the period of 1-Aug-2016 to 1-Aug-2017. This dataset is hosted publicaly on Bigquery.
+
+It includes the following kinds of information:
+
+Traffic source data: information about where website visitors originate. This includes data about organic traffic, paid search traffic, display traffic, etc.
+Content data: information about the behavior of users on the site. This includes the URLs of pages that visitors look at, how they interact with content, etc.
+Transactional data: information about the transactions that occur on the Google Merchandise Store website.
+
+Orignal dataset contains total of 366 tables, one table for each day. Each row of the table represents a session and columns contains the detailed information about the session. Details on table schema and columns can be found here [BigQuery table schema](https://support.google.com/analytics/answer/3437719?hl=en)
