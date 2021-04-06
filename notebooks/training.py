@@ -122,28 +122,28 @@ model = implicit.als.AlternatingLeastSquares(factors=50, calculate_training_loss
 model.fit(sparse_X)
 
 
-# In[16]:
+# In[32]:
 
 
-rr = [(1, 1.0),
- (6, 0.79173917),
- (269, 0.77855545),
- (14, 0.7783902),
- (268, 0.75167114),
- (30, 0.6727726),
- (13, 0.6721482),
- (346, 0.66535795),
- (235, 0.65510774),
- (231, 0.64452976)]
+# rr = [(1, 1.0),
+#  (6, 0.79173917),
+#  (269, 0.77855545),
+#  (14, 0.7783902),
+#  (268, 0.75167114),
+#  (30, 0.6727726),
+#  (13, 0.6721482),
+#  (346, 0.66535795),
+#  (235, 0.65510774),
+#  (231, 0.64452976)]
 
 
-# In[31]:
+# In[33]:
 
 
 i = 1 ### User Clicked on item !
 recommendations = model.similar_items(1)
 print("Because you liked '{}'\n".format(get_itemName(i)))
-for r in rr:
+for r in recommendations:
     if r[0]!= 1:
         print(get_itemName(r[0]))
 
