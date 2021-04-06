@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[11]:
+# In[1]:
 
 
 import pandas as pd
@@ -20,20 +20,20 @@ sys.path.append(os.path.join(dir_path, "src"))
 from utils import create_map
 
 
-# In[12]:
+# In[2]:
 
 
 products = pd.read_csv(os.path.join(dir_path, 'data', 'raw', 'product.csv'))
 
 
-# In[13]:
+# In[3]:
 
 
 norm_df = pd.read_csv(os.path.join(dir_path, 'data', 'normalized_data.csv'))
 norm_df.head()
 
 
-# In[20]:
+# In[4]:
 
 
 sparse_X, user_mapper, item_mapper, userIdx_id, itemIdx_id =  create_map(norm_df)
@@ -41,21 +41,21 @@ sparse_X, user_mapper, item_mapper, userIdx_id, itemIdx_id =  create_map(norm_df
 
 # ### Check how sparse data is
 
-# In[15]:
+# In[5]:
 
 
 sparsity = sparse_X.count_nonzero()/(sparse_X.shape[0]*sparse_X.shape[1])
 print(f"Matrix sparsity: {round(sparsity*100,2)}%")
 
 
-# In[16]:
+# In[6]:
 
 
 ### Save Sparse matrix for future use
 save_npz('../data/user_item_matrix.npz', sparse_X)
 
 
-# In[22]:
+# In[7]:
 
 
 ## Finds the product name regardless of spelling mistake
@@ -90,19 +90,19 @@ def get_item_index(itemName):
     return item_idx
 
 
-# In[24]:
+# In[8]:
 
 
 item_finder("glass")
 
 
-# In[23]:
+# In[9]:
 
 
 get_item_index('glass')
 
 
-# In[25]:
+# In[10]:
 
 
 get_itemName(196)
@@ -110,14 +110,40 @@ get_itemName(196)
 
 # ## Build Model
 
-# In[27]:
+# In[11]:
 
 
 model = implicit.als.AlternatingLeastSquares(factors=50, calculate_training_loss=False, use_gpu=False)
 
 
-# In[28]:
+# In[12]:
 
 
 model.fit(sparse_X)
+
+
+# In[16]:
+
+
+rr = [(1, 1.0),
+ (6, 0.79173917),
+ (269, 0.77855545),
+ (14, 0.7783902),
+ (268, 0.75167114),
+ (30, 0.6727726),
+ (13, 0.6721482),
+ (346, 0.66535795),
+ (235, 0.65510774),
+ (231, 0.64452976)]
+
+
+# In[31]:
+
+
+i = 1 ### User Clicked on item !
+recommendations = model.similar_items(1)
+print("Because you liked '{}'\n".format(get_itemName(i)))
+for r in rr:
+    if r[0]!= 1:
+        print(get_itemName(r[0]))
 
