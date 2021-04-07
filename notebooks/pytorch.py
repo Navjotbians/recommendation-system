@@ -232,25 +232,26 @@ def testing(model, unsqueeze = False):
 
 
 
-# In[146]:
+# In[153]:
 
 
 model = MatrixMultiplication(visitor_count, item_count)
 model
 
 
-# In[147]:
+# In[154]:
 
 
-train_loss, val_loss = training(model, epochs=5, lr=0.01)
+epochs=5
+train_loss, val_loss = training(model, epochs, lr=0.01)
 
 
 # ### Plot training and validation loss
 
-# In[149]:
+# In[155]:
 
 
-parameter_range = np.arange(1, 6, 1)
+parameter_range = np.arange(1, epochs+1, 1)
 plt.plot(parameter_range, train_loss, 
      label = "Training Score", color = 'b')
 plt.plot(parameter_range, val_loss ,
@@ -264,16 +265,16 @@ plt.legend(loc = 'best')
 plt.show()
 
 
-# In[143]:
+# In[163]:
 
 
-m = 959
-n = 5
-a = torch.LongTensor([m]) ## visitor at index 1
-b = torch.LongTensor([n])  ## Item at index 0
+m = 959   ## visitor at index 1
+n = 5     ## Item at index 0
+a = torch.LongTensor([m]) 
+b = torch.LongTensor([n])  
 
 
-# In[109]:
+# In[164]:
 
 
 model.eval()
@@ -282,20 +283,26 @@ with torch.no_grad():
 print(out)
 
 
-# In[110]:
+# In[161]:
+
+
+get_userName(m)
+
+
+# In[158]:
 
 
 get_itemName(n)
 
 
-# In[111]:
+# In[159]:
 
 
-liked_items(m, df_train)
+liked_items(m, df_train)  ### liked items from training
 
 
-# In[112]:
+# In[162]:
 
 
-liked_items(m, df_val)
+liked_items(m, df_val)  ### Liked items from validation set
 
