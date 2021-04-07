@@ -115,6 +115,42 @@ df_train
 df_val
 
 
+# In[89]:
+
+
+## With VisitorId get visitor name (use visitor Id from the encoded data)
+def get_userName(visitorId):
+  visitor = (df_train[df_train['visitorId'] == visitorId]['id'].values)[0]
+  customer = df[df['id'] == visitor]['visitorId'].values[0]
+  return customer
+get_userName(959)
+
+
+# In[113]:
+
+
+## With ItemID get product name (use ItemId's from encoded data)
+def get_itemName(itemId):
+  itm = df_train[df_train['itemId'] == itemId]['id'].values[0]
+  itm = df[df['id']== itm]['itemId'].values[0]
+  itemId_name = dict(zip(products['itemId'], products['itemName']))
+  return itemId_name[itm]
+get_itemName(5)
+
+
+# In[114]:
+
+
+### Items liked by user in train and val dataset 
+### (use visitor Id from the encoded data and dataframe is encoded train and validation data)
+def liked_items(visitorId, dataframe):
+  likes = dataframe[dataframe['visitorId'] == visitorId]['itemId'].values.tolist()
+  for i in likes:
+    print(get_itemName(i))
+
+liked_items(959, df_val)
+
+
 # ## Model
 
 # In[76]:
@@ -131,22 +167,22 @@ visitors =  torch.LongTensor(df_train.visitorId.values)
 items = torch.LongTensor(df_train.itemId.values)
 
 
-# In[78]:
+# In[115]:
 
 
 ## Every nn.Module subclass implements the operations on input data in the forward method
-class MatrixMultiplication(nn.Module):                ## defining Matrix multiplication by subclassing nn.Module
+class MatrixMultiplication(nn.Module):      ## defining Matrix multiplication by subclassing nn.Module
   def __init__(self, visitor_count, item_count, embed_size = 100): 
     super(MatrixMultiplication, self).__init__()     ## Initialize matrix Multiplication using __init__ 
-    self.visitor_embed = nn.Embedding(visitor_count, embed_size)
-    self.item_embed = nn.Embedding(item_count, embed_size)
+    self.visitor_embed = nn.Embedding(visitor_count, embed_size) ## feature embedding for visitor
+    self.item_embed = nn.Embedding(item_count, embed_size)  ## feature embedding for items
     self.visitor_embed.weight.data.uniform_(0, 0.05)
     self.item_embed.weight.data.uniform_(0, 0.05)
 
   def forward(self, v, i):
     v = self.visitor_embed(v)
     i = self.item_embed(i)
-    return (v*i).sum(1)
+    return (v*i).sum(1)   ### V*I gives the sparse matrix 
 
 
 # In[79]:
@@ -200,18 +236,38 @@ model
 training(model, epochs=5, lr=0.01)
 
 
-# In[83]:
+# In[108]:
 
 
-a = torch.LongTensor([1])
-b = torch.LongTensor([0])
+m = 959
+n = 5
+a = torch.LongTensor([m]) ## visitor at index 1
+b = torch.LongTensor([n])  ## Item at index 0
 
 
-# In[84]:
+# In[109]:
 
 
 model.eval()
 with torch.no_grad():
   out = model(a, b)
 print(out)
+
+
+# In[110]:
+
+
+get_itemName(n)
+
+
+# In[111]:
+
+
+liked_items(m, df_train)
+
+
+# In[112]:
+
+
+liked_items(m, df_val)
 
