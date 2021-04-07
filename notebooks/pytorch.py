@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[18]:
+# In[148]:
 
 
 import torch
@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import os
 dir_path = os.path.dirname(os.getcwd())
 
@@ -160,14 +161,14 @@ visitor_count = len(df_train['visitorId'].unique())
 item_count = len(df_train['itemId'].unique())
 
 
-# In[77]:
+# In[126]:
 
 
 visitors =  torch.LongTensor(df_train.visitorId.values)
 items = torch.LongTensor(df_train.itemId.values)
 
 
-# In[115]:
+# In[127]:
 
 
 ## Every nn.Module subclass implements the operations on input data in the forward method
@@ -185,13 +186,16 @@ class MatrixMultiplication(nn.Module):      ## defining Matrix multiplication by
     return (v*i).sum(1)   ### V*I gives the sparse matrix 
 
 
-# In[79]:
+# In[144]:
 
 
 def training (model, epochs = 2, lr = 0.001, wd = 0.0, unsqueeze = False):
   optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
   model.train()
+  train_loss = []
+  val_loss = []
   for i in range(epochs):
+    print("----------Epoch {}----------".format(i+1))
     visitors = torch.LongTensor(df_train.visitorId.values)
     items = torch.LongTensor(df_train.itemId.values)
     session_duration = torch.FloatTensor(df_train.normalized_session_duration.values)
@@ -204,11 +208,14 @@ def training (model, epochs = 2, lr = 0.001, wd = 0.0, unsqueeze = False):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    print(loss.item())
-  testing(model, unsqueeze)
+    train_loss.append(loss.item())
+    val_loss.append(testing(model, unsqueeze))
+    print("Train loss : {}".format(loss.item()))
+    print("Val loss : {}\n".format(testing(model, unsqueeze)))
+  return train_loss, val_loss
 
 
-# In[80]:
+# In[145]:
 
 
 def testing(model, unsqueeze = False):
@@ -220,23 +227,44 @@ def testing(model, unsqueeze = False):
     session_duration.unsqueeze(1)
   out = model(visitors, items)
   loss = F.mse_loss(out , session_duration)
-  print("Test loss ; {}".format(loss.item()))
+#   print("Test loss ; {}".format(loss.item()))
+  return loss.item()
 
 
-# In[81]:
+
+# In[146]:
 
 
 model = MatrixMultiplication(visitor_count, item_count)
 model
 
 
-# In[82]:
+# In[147]:
 
 
-training(model, epochs=5, lr=0.01)
+train_loss, val_loss = training(model, epochs=5, lr=0.01)
 
 
-# In[108]:
+# ### Plot training and validation loss
+
+# In[149]:
+
+
+parameter_range = np.arange(1, 6, 1)
+plt.plot(parameter_range, train_loss, 
+     label = "Training Score", color = 'b')
+plt.plot(parameter_range, val_loss ,
+   label = "Validation Score", color = 'g')
+# Creating the plot
+plt.title("Training and Validation Curve")
+plt.xlabel("Number of Epochs")
+plt.ylabel("Mean Square Error")
+plt.tight_layout()
+plt.legend(loc = 'best')
+plt.show()
+
+
+# In[143]:
 
 
 m = 959
