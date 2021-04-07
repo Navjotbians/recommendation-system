@@ -1,6 +1,13 @@
+fuzzywuzzy==0.18.0
 google-cloud-bigquery-storage==2.3.0
 grpcio==1.36.1
-ipykernel==5.5.0
+implicit==0.4.4
+ipywidgets==7.6.3
+matplotlib==3.3.4
 pandas-gbq==0.14.0
 pip-chill==1.0.1
 pyarrow==3.0.0
+pyspark==3.1.1
+sklearn==0.0
+torchaudio==0.8.1
+torchvision==0.9.1+cpu
