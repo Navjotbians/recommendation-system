@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[111]:
+# In[1]:
 
 
 import pandas as pd
@@ -20,26 +20,26 @@ sys.path.append(os.path.join(dir_path, "src"))
 from utils import create_map
 
 
-# In[113]:
+# In[2]:
 
 
 products = pd.read_csv(os.path.join(dir_path, 'data', 'raw', 'product.csv'))
 
 
-# In[114]:
+# In[3]:
 
 
 norm_df = pd.read_csv(os.path.join(dir_path, 'data', 'normalized_data.csv'))
 norm_df.head()
 
 
-# In[115]:
+# In[4]:
 
 
 sparse_X, user_mapper, item_mapper, userIdx_id, itemIdx_id =  create_map(norm_df)
 
 
-# In[130]:
+# In[5]:
 
 
 def get_top_items(n, df=norm_df):
@@ -63,7 +63,7 @@ def get_top_items(n, df=norm_df):
     return top_items_id, top_items_name # Return the top item Ids and Item names from df 
 
 
-# In[131]:
+# In[6]:
 
 
 top_items_id, top_items_name = get_top_items(10, norm_df)
@@ -74,14 +74,15 @@ print("Top 10 most viewed item Ids are :\n {}".format(top_items_id))
 
 # ### Check how sparse data is
 
-# In[132]:
+# In[11]:
 
 
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import csr_matrix
+import scipy
 
 
-# In[150]:
+# In[12]:
 
 
 ## Finds the product name regardless of spelling mistake
@@ -116,7 +117,7 @@ def get_item_index(itemName):
     return item_idx
 
 
-# In[133]:
+# In[13]:
 
 
 V = norm_df['visitorId'].nunique()
@@ -132,82 +133,11 @@ user_index = [user_mapper[i] for i in norm_df['visitorId']]
 item_index = [item_mapper[i] for i in norm_df['itemId']]
 
 
-# In[8]:
+# In[40]:
 
 
-X = csr_matrix((norm_df["normalized_session_duration"], (user_index, item_index)), shape=(V, I))
-
-
-# In[124]:
-
-
-X.shape
-
-
-# In[125]:
-
-
-sparsity = X.count_nonzero()/(sparse_X.shape[0]*sparse_X.shape[1])
-print(f"Matrix sparsity: {round(sparsity*100,2)}%")
-
-
-# In[173]:
-
-
-item_sparse = cosine_similarity(sparse_X, dense_output=False)
-print('pairwise sparse output:\n {}\n'.format(item_sparse))
-
-
-# In[174]:
-
-
-item_item_similar = top_n_idx_sparse(item_sparse, 5)
-item_item_similar_dict = {}
-for idx, val in enumerate(item_item_similar):
-        item_item_similar_dict.update({idx: val.tolist()})
-item_item_similar_dict
-
-
-# In[176]:
-
-
-item_item_similar_dict[4]
-for i in item_item_similar_dict[1]:
-    print(get_itemName(i))
-
-
-# In[127]:
-
-
-# print(sparse_X.toarray())
-
-
-# In[15]:
-
-
-# similarities = cosine_similarity(X)
-# print('pairwise dense output:\n {}\n'.format(similarities))
-
-
-# In[129]:
-
-
-## also can output sparse matrices
-similarities_sparse = cosine_similarity(X,dense_output=False)
-print('pairwise sparse output:\n {}\n'.format(similarities_sparse))
-
-
-# In[ ]:
-
-
-save_npz(os.path.join(dir_path, 'data', 'user_user_similarity'), similarities_sparse)
-
-
-# In[177]:
-
-
+###  Return index of top n values in each row of a sparse matrix
 def top_n_idx_sparse(matrix, n):
-    '''Return index of top n values in each row of a sparse matrix'''
     top_n_idx = []
     for le, ri in zip(matrix.indptr[:-1], matrix.indptr[1:]):
         n_row_pick = min(n, ri - le)
@@ -215,7 +145,69 @@ def top_n_idx_sparse(matrix, n):
     return top_n_idx
 
 
-# In[178]:
+# In[ ]:
+
+
+item_sparse = cosine_similarity(sparse_X, dense_output=False)
+print('pairwise sparse output:\n {}\n'.format(item_sparse))
+
+
+# In[17]:
+
+
+sparsity = X.count_nonzero()/(sparse_X.shape[0]*sparse_X.shape[1])
+print(f"Matrix sparsity: {round(sparsity*100,2)}%")
+
+
+# In[ ]:
+
+
+### Top 5 similar items to the item
+item_item_similar = top_n_idx_sparse(item_sparse, 5)
+item_item_similar_dict = {}
+for idx, val in enumerate(item_item_similar):
+        item_item_similar_dict.update({idx: val.tolist()})
+item_item_similar_dict
+
+
+# In[28]:
+
+
+# Get item names
+for i in item_item_similar_dict[1]:
+    print(get_itemName(i))
+
+
+# In[30]:
+
+
+### Convert into array but menory doesn't allow
+# print(sparse_X.toarray())
+
+
+# In[31]:
+
+
+# similarities = cosine_similarity(X)
+# print('pairwise dense output:\n {}\n'.format(similarities))
+
+
+# In[ ]:
+
+
+## Also can output sparse matrices
+similarities_sparse = cosine_similarity(X,dense_output=False)
+print('pairwise sparse output:\n {}\n'.format(similarities_sparse))
+
+
+# In[ ]:
+
+
+## Save the similarities_sparse matrics
+# save_npz(os.path.join(dir_path, 'data', 'user_user_similarity'), similarities_sparse)
+
+
+# In[ ]:
 
 
 user_user_similar = top_n_idx_sparse(similarities_sparse, 10)
@@ -225,22 +217,22 @@ for idx, val in enumerate(user_user_similar):
 user_user_similar_dict
 
 
-# In[179]:
+# In[ ]:
 
 
-# gets actual user ids from data based on sparse matrix position index
-similar_users_final = {}
-for user, similar_users in user_user_similar_dict.items():
-    idx = user_name[user]
-    values = []
-    for value in similar_users:
-        values.append(user_name[value])
+# # gets actual user ids from data based on sparse matrix position index
+# similar_users_final = {}
+# for user, similar_users in user_user_similar_dict.items():
+#     idx = user_name[user]
+#     values = []
+#     for value in similar_users:
+#         values.append(user_name[value])
 
-    similar_users_final.update({idx: values})
-similar_users_final
+#     similar_users_final.update({idx: values})
+# similar_users_final
 
 
-# In[185]:
+# In[35]:
 
 
 ## Liked item by a perticular user
@@ -254,7 +246,7 @@ def liked_items(visitorId, dataframe = norm_df):
 liked_items(1, norm_df)
 
 
-# In[226]:
+# In[36]:
 
 
 def recommend_product(q): ## q is user index number
@@ -297,15 +289,15 @@ def recommend_product(q): ## q is user index number
             print("\n")
 
 
-# In[227]:
+# In[37]:
 
 
 # lo = ['Waterpoof Gear Bag', "Google Men's 100% Cotton Short Sleeve Hero Tee White", 'Waterproof Gear Bag']
 # item_finder("Waterprof Gear Bag")
 
 
-# In[228]:
+# In[39]:
 
 
-recommend_product(900000)
+recommend_product(55)
 
