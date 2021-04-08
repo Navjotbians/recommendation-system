@@ -26,14 +26,14 @@ from utils import create_map
 products = pd.read_csv(os.path.join(dir_path, 'data', 'raw', 'product.csv'))
 
 
-# In[3]:
+# In[43]:
 
 
 norm_df = pd.read_csv(os.path.join(dir_path, 'data', 'normalized_data.csv'))
 norm_df.head()
 
 
-# In[4]:
+# In[38]:
 
 
 sparse_X, user_mapper, item_mapper, userIdx_id, itemIdx_id =  create_map(norm_df)

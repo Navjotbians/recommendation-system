@@ -46,7 +46,7 @@ def bq2df(sql):
 
 # ### Raw data
 
-# In[257]:
+# In[5]:
 
 
 q = ('SELECT * FROM `dummy24571.merch_store.ga_sessions_*` '
@@ -55,7 +55,7 @@ complete_data = bq2df(q)
 complete_data.head()
 
 
-# In[8]:
+# In[6]:
 
 
 print("HITS :- is an array of the nested fields that are populated for any and all types of hits.\nTOTALS :- is the section contains aggregate values across the session.")
@@ -63,12 +63,12 @@ print("HITS :- is an array of the nested fields that are populated for any and a
 
 # ### Number of tables in dataset
 
-# In[261]:
+# In[8]:
 
 
 merch_data = client.get_dataset(merch_data_ref)
 tables = [x.table_id for x in client.list_tables(merch_data)]
-tables
+len(tables)
 
 
 # The sample dataset contains jumbled Google Analytics 360 data from the Google Merchandise Store, a real ecommerce store for the period of 1-Aug-2016 to 1-Aug-2017.<br>
@@ -81,7 +81,7 @@ tables
 
 # ### Extracting Data for Recommender System
 
-# In[262]:
+# In[9]:
 
 
 q = """
@@ -104,7 +104,7 @@ q = """
 """
 
 
-# In[263]:
+# In[10]:
 
 
 ## Sample of data which we require 
@@ -114,7 +114,7 @@ dd.head()
 
 # ### Loading Processed Data
 
-# In[264]:
+# In[11]:
 
 
 ## Loading the processed data that I stored on GCP using processd_data.py
@@ -126,7 +126,7 @@ df = bq2df(q)
 df.head()
 
 
-# In[278]:
+# In[12]:
 
 
 print("------- DATA SUMMARY -------\n")
@@ -140,12 +140,24 @@ print("Number of product details viewed by the users but at the end of the sessi
 
 # ### Most Viewed Products
 
-# In[279]:
+# Most viewed article_id, as well as how often it was viewed
+
+# In[57]:
 
 
-d  = pd.DataFrame(df, columns= ['visitorId', 'itemId'])
-prod_count = d.pivot_table(index=['itemId'], aggfunc='size')
-prod_count.sort_values(ascending= False).head(10)
+most_viewed_itemsId = df.groupby('itemId').count()
+most_viewed_itemsId.sort_values('visitorId', ascending=False).head(10)
+most_viewed_itemId_sorted = most_viewed_itemsId.sort_values('visitorId',ascending=False)
+most_viewed_itemId_sorted.head(10)
+
+
+# In[62]:
+
+
+most_viewed_article = str(most_viewed_itemsId.index[0])
+print('The most viewed item in the dataset : {}'.format(most_viewed_itemId_sorted.index[0]))
+max_views = most_viewed_itemsId.values[0]
+print('The most viewed item in the dataset was viewed how many times? {}'.format(most_viewed_itemId_sorted['visitorId'][0]))
 
 
 # ### Histogram of Session Durations
