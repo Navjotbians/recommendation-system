@@ -1,6 +1,10 @@
 
 # coding: utf-8
 
+# # Cosine Similarity based recommendation
+
+# Here I will build a recommendation system using Cosine Similarity for a Collaborative-Filtering approach, in this case I can’t specifically call it Machine Learning because there will be no Gradient Descent or any other type of hyperparameter involved. What I will do is just preprocess our data in a smart way and apply some calculation steps.
+
 # In[1]:
 
 
@@ -21,21 +25,26 @@ dir_path = os.path.dirname(os.getcwd())
 # from utils import create_map
 
 
-# In[4]:
+# Get data folder from here
+# https://drive.google.com/drive/folders/1hjyAcf3whkc1SZMvGmTmlktxEqBu55JP?usp=sharing
+
+# In[3]:
 
 
-products = pd.read_csv(os.path.join(dir_path, 'data', 'raw','product.csv'))
+# Read product information which I will use later to get the product names
+products = pd.read_csv(os.path.join(dir_path, 'data','raw', 'product.csv'))
 products.head()
 
 
-# In[5]:
+# In[4]:
 
 
+# Read processed data
 norm_df = pd.read_csv(os.path.join(dir_path, 'data', 'normalized_data.csv'))
 norm_df.head()
 
 
-# In[6]:
+# In[5]:
 
 
 # (data_sparse != sparse_X).nnz==0 
@@ -46,17 +55,27 @@ print("Number of Customers : {}".format(norm_df['visitorId'].nunique()))
 print("Total number of products : {}\n".format(norm_df['itemId'].nunique()))
 
 
-# In[7]:
+# ## Transforming the data
+
+# We need to transform the norm_df dataframe into a visitor-item matrix where rows represent visitors and columns represent items. The cells of this matrix will be populated with implicit feedback: in this case, the time spent by the visitor on item page (normalized_session_duration).
+
+# In[6]:
 
 
-V = norm_df['visitorId'].nunique() # Get our unique customers
-I = norm_df['itemId'].nunique()
+# Get our unique customers
+V = norm_df['visitorId'].nunique() 
+# Get number of unique item
+I = norm_df['itemId'].nunique() 
 
+# maps visitor id to visitor index
 visitor_mapper = dict(zip(np.sort(norm_df.visitorId.unique()), list(range(V))))
-item_mapper = dict(zip(np.sort(norm_df.itemId.unique()), list(range(I))))
+# maps item id to item index
+item_mapper = dict(zip(np.sort(norm_df.itemId.unique()), list(range(I))))  
 
-visitor_name = dict(zip(list(range(V)), np.sort(norm_df.visitorId.unique())))
-item_name = dict(zip(list(range(I)), np.sort(norm_df.itemId.unique())))
+# maps visitor index to visitor id
+visitor_name = dict(zip(list(range(V)), np.sort(norm_df.visitorId.unique()))) 
+# maps item index to item id
+item_name = dict(zip(list(range(I)), np.sort(norm_df.itemId.unique()))) 
 
 # Get the associated row indices
 visitor_index = [visitor_mapper[i] for i in norm_df['visitorId']]
@@ -69,7 +88,7 @@ itemId_name = dict(zip(products['itemId'], products['itemName']))
 itemName_Id = dict(zip(products['itemName'], products['itemId']))
 
 
-# In[8]:
+# In[7]:
 
 
 ## Finds the product name regardless of spelling mistake
@@ -94,7 +113,7 @@ def get_item_index(itemName):
 
 # Since our goal is to use Cosine Similarity to measure how close Visitor are from each other, we need to transform our dataset from a dense to a sparse representation. In order to achieve that each Visitor needs to be represented by a single row in the dataset so that the columns are the session duration of the Visitor to each different item.
 
-# In[9]:
+# In[8]:
 
 
 def create_map(norm_df, item_item = False):
@@ -106,7 +125,7 @@ def create_map(norm_df, item_item = False):
         return X
 
 
-# In[10]:
+# In[9]:
 
 
 sparse_X =  create_map(norm_df)
@@ -114,7 +133,7 @@ sparse_X =  create_map(norm_df)
 
 # ### Calculating the distance among Visitors
 
-# In[11]:
+# In[ ]:
 
 
 # calculate similarity between each row that is similar visitors
@@ -126,7 +145,7 @@ print('pairwise sparse output:\n {}\n'.format(similarities_sparse))
 # 
 # The shape of our similarities_sparse is (# of visitorID, # of visitorID) and the values are the similarity scores computed for each Visitor against every other Visitor in the dataset.
 
-# In[12]:
+# In[ ]:
 
 
 similarities_sparse.shape
@@ -136,7 +155,7 @@ similarities_sparse.shape
 # 
 # The method top_n_idx_sparse below takes as input a scipy.csr_matrix and returns the top K highest indexes in each row, thats where we get the most similar visitor for each visitor in our Dataset
 
-# In[13]:
+# In[ ]:
 
 
 ###  Return index of top n values in each row of a sparse matrix
@@ -148,14 +167,14 @@ def top_n_idx_sparse(matrix, n):
     return top_n_idx
 
 
-# In[14]:
+# In[ ]:
 
 
 visitor_visitor_similar = top_n_idx_sparse(similarities_sparse, 5)
 visitor_visitor_similar
 
 
-# In[15]:
+# In[32]:
 
 
 ### Top 5 similar visitors to the visitor
@@ -165,10 +184,12 @@ for idx, val in enumerate(visitor_visitor_similar):
 visitor_visitor_similar_dict
 
 
-# In[14]:
+# Now we have dictionary that contains the visitor index as a key and a list of similar visitor as a value 
+
+# In[33]:
 
 
-## Liked item by a perticular user
+## Liked item by a visitor
 def liked_items(visitorId, dataframe = norm_df):
   user_id = (visitor_name[visitorId])
   likes = dataframe[norm_df['visitorId'] == user_id]['itemId'].values.tolist()
@@ -179,10 +200,13 @@ def liked_items(visitorId, dataframe = norm_df):
 liked_items(16, norm_df)
 
 
-# In[15]:
+# This function will be used in making recommendations for getting the liked items by the visitor
+
+# In[34]:
 
 
-def get_top_items(n, df=norm_df):
+# Find K top popular items
+def top_k_popular_items(n, df=norm_df):
     most_viewed_itemsId = df.groupby('itemId').count()
 #     most_viewed_itemsId.sort_values('visitorId', ascending=False).head(10)
     most_viewed_itemId_sorted = most_viewed_itemsId.sort_values('visitorId',ascending=False)
@@ -196,31 +220,31 @@ def get_top_items(n, df=norm_df):
     return top_items_id, top_items_name # Return the top item Ids and Item names from df 
 
 
-# In[16]:
+# In[35]:
 
 
-top_items_id, top_items_name = get_top_items(10, norm_df)
+top_items_id, top_items_name = top_k_popular_items(10, norm_df)
 print("Top 10 most viewed items are :\n {}".format(top_items_name))
 print("\n")
 print("Top 10 most viewed item Ids are :\n {}".format(top_items_id))
 
 
-# In[17]:
+# In[36]:
 
 
-## Lets find similar items now
+## Lets find similar items now so that we can make recommendations based on item similarty as well
 item_sparse_X = create_map(norm_df, item_item = True)
 item_sparse_X
 
 
-# In[18]:
+# In[37]:
 
 
 item_sparse = cosine_similarity(item_sparse_X, dense_output=False)
 print('pairwise sparse output:\n {}\n'.format(item_sparse))
 
 
-# In[19]:
+# In[38]:
 
 
 ### Top 5 similar items to the item
@@ -231,16 +255,20 @@ for idx, val in enumerate(item_item_similar):
 item_item_similar_dict
 
 
-# In[20]:
+# In[45]:
 
 
 def recommend_product(q): ## q is Visitor index number
-    if q >= V:
-        top_items_id, top_items_name = get_top_items(10, norm_df)
+    
+    # When recommending to new user
+    if q >= V:  
+        top_items_id, top_items_name = top_k_popular_items(10, norm_df)
         print("Recommend top selling products : \n{}".format(top_items_name))
-    else:
-        other_likes = []
-        q_likes = []
+        
+    # Recommendations for existing user
+    else:   
+        other_likes = []  # Items liked by the similar visitors 
+        q_likes = []   # Already liked items by the visitor for whom we are making recommendations
         for j in liked_items(q, norm_df):
             q_likes.append(j)
         print("Items liked by visitor {} are : \n {}".format(q, q_likes))
@@ -251,11 +279,13 @@ def recommend_product(q): ## q is Visitor index number
                         other_likes.append(p)
         print("\n")        
         print("Items liked by similar visitors \n{}".format(other_likes))
-        recom = []
+        
+        recom = []  # Items liked by the similar visitors excluding q_likes
         for item in (other_likes):
             if item not in q_likes:
                 recom.append(item)
-
+        
+        # In case similar users have no new item to suggest then we will make suggestions based on the item similarity
         if len(recom) == 0:
             for q_like in q_likes:
                 item_indx = get_item_index(q_like)
@@ -274,13 +304,16 @@ def recommend_product(q): ## q is Visitor index number
         return recom
 
 
-# In[21]:
+# ## Results
+
+# In[46]:
 
 
+# recommendation for visitor 585
 recommendations = recommend_product(585)
 
 
-# In[22]:
+# In[47]:
 
 
 ### Check if all the items recommended by the cosine similarily method exist in the top selling items
@@ -292,7 +325,9 @@ else :
     print("No, top_items_name doesn't have all elements of the recommendations.")
 
 
-# In[153]:
+# This means our method is performing better than popularity based method
+
+# In[45]:
 
 
 # ## Save the similarities_sparse matrics
